@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="author" content="Jaroslaw Tomasz Zolkiewski">
+	<title>Monks & Warlords</title>
+	<style>
+	body{
+		margin:0;
+		padding:0;
+		text-align:center;
+		vertical-align:center;
+		background:url("sky.png");
+		background-size:cover;
+	}
+	canvas{
+		position:absolute;
+		top:0px;
+		left:0px;
+		padding:0px;
+		margin:0px;
+		display:none;
+	}
+	h1{
+		font:100px tahoma;
+	}
+	</style>
+</head>
+<body>
+	<br><br><br>
+	<h1 id="score"></h1>
+	<br><br>
+	<h2 id="score2"></h2>
+	<canvas id="land"></canvas>
+	<canvas id="scene"></canvas>
+	<div id="menu">
+		<h1>Choose your warrior!</h1>
+		<table style="display:inline">
+			<tr>
+			<td>
+				<img width="200" height="200" src="catholicMonkIcon.png" onclick="heroes.push(new CMonk(window.innerWidth/8,window.innerHeight/8));init()"></img>
+				<h4>Catholic Monk</h4>
+			</td>
+			<td>
+				<img width="200" height="200" src="shaolinMonkIcon.png" onclick="heroes.push(new SMonk(window.innerWidth/8,window.innerHeight/8));init()"></img>
+				<h4>Shaolin Monk</h4>
+			</td>
+			<td>
+				<img width="200" height="200" src="necroIcon.png" onclick="heroes.push(new Necro(window.innerWidth/8,window.innerHeight/8));init()"></img>
+				<h4>Necromancer</h4>
+			</td>
+			<td>
+				<img width="200" height="200" src="infernalWarlordIcon.png" onclick="heroes.push(new IWarlord(window.innerWidth/8,window.innerHeight/8));init()"></img>
+				<h4>Infernal Warlord</h4>
+			</td>
+			</tr>
+		</table>
+	</div>
+</body>
+<script>
+scene.width=land.width=window.innerWidth
+scene.height=land.height=window.innerHeight
+let sc = scene.getContext("2d"),ln = land.getContext("2d"), _=Math.floor
+sc.fillStyle="green"
+let scaling = 4
+sc.scale(scaling,scaling)
+ln.scale(scaling,scaling)
+projectiles=[]
+heroes = []
+class Hero{
+	hp = 120
+	x = 200
+	y = 200
+	dx = 0
+	dy = 0
+	tx = 0
+	ty = 0
+	constructor(x,y){
+		this.x=x
+		this.y=y
+	}
+	move(){
+		if(Math.abs(this.x-this.tx)>1)this.x+=this.dx
+		if(Math.abs(this.y-this.ty)>1)this.y+=this.dy
+	}
+	head(x,y){
+		this.tx=x
+		this.ty=y
+		let len = ((x-this.x)**2+(y-this.y)**2)**0.5*2
+		this.dx = (x - this.x)/len
+		this.dy = (y - this.y)/len
+	}
+}
+class Necro extends Hero{
+	static sprite = new Image()
+	static {Necro.sprite.src="necro.png"}
+	shoot(tx,ty){
+		let len = ((tx-this.x)**2+(ty-this.y)**2)**0.5*1.5
+		let dx = (tx - this.x)/len,	dy = (ty - this.y)/len
+		return new DarkFlame(this.x+32*dx,this.y+32*dy,dx,dy)
+	}
+}
+class IWarlord extends Hero{
+	static sprite = new Image()
+	static {IWarlord.sprite.src="infernalWarlord.png"}
+	shoot(tx,ty){
+		let len = ((tx-this.x)**2+(ty-this.y)**2)**0.5*1.5
+		let dx = (tx - this.x)/len,	dy = (ty - this.y)/len
+		return new FireBall(this.x+32*dx,this.y+32*dy,dx,dy)
+	}
+}
+class CMonk extends Hero{
+	static sprite = new Image()
+	static {CMonk.sprite.src="catholicMonk.png"}
+	shoot(tx,ty){
+		let len = ((tx-this.x)**2+(ty-this.y)**2)**0.5*1.5
+		let dx = (tx - this.x)/len,	dy = (ty - this.y)/len
+		return new LightBall(this.x+32*dx,this.y+32*dy,dx,dy)
+	}
+}
+class SMonk extends Hero{
+	static sprite = new Image()
+	static {SMonk.sprite.src="shaolinMonk_charge.png"}
+	shoot(tx,ty){
+		let len = ((tx-this.x)**2+(ty-this.y)**2)**0.5*1.5
+		let dx = (tx - this.x)/len,	dy = (ty - this.y)/len
+		return new ChiBall(this.x+32*dx,this.y+32*dy,dx,dy)
+	}
+}
+player1 = 0
+class Projectile{
+	constructor(x,y,dx,dy){
+		this.x=x
+		this.y=y
+		this.dx=dx
+		this.dy=dy
+	}
+	move(){
+		this.x+=this.dx
+		this.y+=this.dy
+	}
+}
+class LightBall extends Projectile{
+	static sprite = new Image()
+	static{LightBall.sprite.src="lightBall.png"}
+}
+class DarkFlame extends Projectile{
+	static sprite = new Image()
+	static{DarkFlame.sprite.src="darkFlame.png"}
+}
+class ChiBall extends Projectile{
+	static sprite = new Image()
+	static{ChiBall.sprite.src="chiBall.png"}
+}
+class FireBall extends Projectile{
+	static sprite = new Image()
+	static{FireBall.sprite.src="fireBall.png"}
+}
+function randInt(n){
+	return Math.floor(Math.random()*n)
+}
+spawnDelay=4000
+landscape = new Image()
+plants = []
+for(let i=0; i<10; i++){
+	plants.push(new Image())
+	plants[i].src = "grass"+i+".png"
+}
+init=()=>{
+	beginning = performance.now()
+	land.style.display="block"
+	scene.style.display="block"
+	menu.style.display="none"
+	playersClass=heroes[player1].constructor.name
+	let x = Math.floor(window.innerWidth)
+	let y =  Math.floor(window.innerHeight)
+	for(let i=0; i<x*y; i++)
+		ln.fillStyle=["#4b4339","#363124","#2f2923"][randInt(3)],ln.fillRect((i%x),Math.floor(i/x),1,1)
+	for(let i=0; i<window.innerHeight/scaling; i+=randInt(4))
+		ln.drawImage(plants[randInt(10)],randInt(window.innerWidth/scaling),i)
+	window.setInterval(function(){
+		sc.clearRect(0,0,800,600)
+		if(!Math.floor(Math.random()*spawnDelay))		heroes.push(new CMonk(-50,Math.random()*320))
+		if(!Math.floor(Math.random()*spawnDelay))		heroes.push(new SMonk(550,Math.random()*320))
+		if(!Math.floor(Math.random()*spawnDelay))		heroes.push(new Necro(Math.random()*450,-50))
+		if(!Math.floor(Math.random()*spawnDelay))		heroes.push(new IWarlord(Math.random()*450,350))
+		for(h of heroes){
+			if(!Math.floor(Math.random()*600) && heroes.indexOf(h)!==player1)
+				h.head(Math.random()*475,Math.random()*244)
+			if(!Math.floor(Math.random()*300) && heroes.indexOf(h)!==player1){
+				let f 
+				(f = heroes.find(g => (g.x-h.y)**2+(g.y-h.y)**2 < 20000 && h.constructor.name != g.constructor.name)) && projectiles.push(h.shoot(f.x,f.y))
+			}
+			sc.drawImage(h.constructor.sprite,h.x-16,h.y-16)
+			if(h.constructor.name===playersClass)
+				sc.fillStyle="green"
+			else
+				sc.fillStyle="red"
+			sc.fillRect(h.x-9,h.y-20,h.hp/120*20,1)
+			h.move()
+		}
+		player1!==null && (sc.fillStyle="yellow",sc.fillRect(heroes[player1].x-9,heroes[player1].y-20,heroes[player1].hp/120*20,1))
+		for(let i=0;i<projectiles.length;i++){
+			sc.drawImage(projectiles[i].constructor.sprite,projectiles[i].x-8,projectiles[i].y-8)
+			projectiles[i].move()
+			for(let j=0; j<heroes.length; j++){
+				if((projectiles[i].x-heroes[j].x)**2+(projectiles[i].y-heroes[j].y)**2<200){
+					heroes[j].hp-=30
+					projectiles.splice(i,1)
+					if(heroes[j].hp<0){
+						if(j==player1){
+							player1 = null
+							scene.style.opacity = "0.5"
+							land.style.opacity = "0.5"
+							score.innerHTML="You have been slain!"
+							score2.innerHTML="Time survived: "+Math.floor((performance.now()-beginning)/1000)+" seconds"
+						}
+						heroes.splice(j,1)
+						spawnDelay-=4
+					}
+					break
+				}
+			}
+			if(projectiles[i] && projectiles[i].x+projectiles[i].y>1000)projectiles.splice(i,1)
+		}
+	},0.025)
+	document.oncontextmenu = e => e.preventDefault()
+	scene.onmousedown = e => {
+		if(player1!==null){
+			if(e.button==2){
+				heroes[player1].head(e.offsetX/scaling,e.offsetY/scaling)
+			}
+			if(e.button==0){
+				projectiles.push(heroes[player1].shoot(e.offsetX/scaling,e.offsetY/scaling))
+			}
+		}
+	}
+}
+</script>
+</html>
